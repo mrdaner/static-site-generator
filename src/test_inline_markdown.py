@@ -3,6 +3,8 @@ from inline_markdown import (
     split_nodes_delimiter,
     extract_markdown_links,
     extract_markdown_images,
+    split_nodes_image,
+    split_nodes_link
 )
 
 from textnode import TextNode, TextType
@@ -106,6 +108,72 @@ class TestInlineMarkdown(unittest.TestCase):
             matches,
         )
 
+    def test_split_images(self):
+        node = TextNode(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.TEXT),
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and another ", TextType.TEXT),
+                TextNode(
+                    "second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"
+                ),
+            ],
+            new_nodes,
+        )
+
+
+    def test_split_links(self):
+        node = TextNode(
+            "This is text with an [link](https://somelink.com) and another [link2](https://somelink2.com)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_link([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.TEXT),
+                TextNode("link", TextType.LINK, "https://somelink.com"),
+                TextNode(" and another ", TextType.TEXT),
+                TextNode(
+                    "link2", TextType.LINK, "https://somelink2.com"
+                ),
+            ],
+            new_nodes,
+        )
+
+
+    def test_split_link(self):
+        node = TextNode(
+            "This is text with one [link](https://somelink.com)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_link([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with one ", TextType.TEXT),
+                TextNode("link", TextType.LINK, "https://somelink.com"),
+            ],
+            new_nodes,
+        )
+
+    def test_split_no_images_or_links(self):
+        node = TextNode("This is plain text with no special formatting.", TextType.TEXT)
+        self.assertListEqual([node], split_nodes_link([node]))
+
+    def test_split_nodes_missing_closing_parenthasis(self):
+        node = TextNode(
+            "This is text with one [link](https://somelink.com",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_link([node])
+        self.assertListEqual(
+            [node],
+            new_nodes,
+        )
 
 if __name__ == "__main__":
     unittest.main()
