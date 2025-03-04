@@ -113,11 +113,4 @@ def text_to_textnodes(text):
     
     return nodes
 
-def text_to_children(text):
-    text_nodes = text_to_textnodes(text)
-    html_nodes = []
-    for text_node in text_nodes:
-        html_node = text_node_to_html_node(text_node)
-        html_nodes.append(html_node)
-    return html_nodes
 

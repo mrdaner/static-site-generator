@@ -1,8 +1,8 @@
 from enum import Enum
 
 from htmlnode import ParentNode
-from inline_markdown import text_to_children
-from textnode import TextNode, text_node_to_html_node, TextType
+from inline_markdown import text_to_textnodes
+from textnode import text_node_to_html_node, TextNode, TextType
 
 class BlockType(Enum):
     PARAGRAPH = "paragraph"
@@ -57,73 +57,92 @@ def block_to_block_type(md_block):
     return BlockType.PARAGRAPH
 
 def markdown_to_html_node(markdown):
-    md_blocks = markdown_to_blocks(markdown)
-    html_blocks = []
-    for block in md_blocks:
-        block_type = block_to_block_type(block)
-        if block_type == BlockType.PARAGRAPH:
-            html_blocks.append(process_paragraph(block))
-        elif block_type == BlockType.HEADING:
-            html_blocks.append(process_heading(block))
-        elif block_type == BlockType.CODE:
-            html_blocks.append(process_code(block))
-        elif block_type == BlockType.QUOTE:
-            html_blocks.append(process_quote(block))
-        elif block_type == BlockType.UNORDERED_LIST:
-            html_blocks.append(process_unordered_list(block))
-        elif block_type == BlockType.ORDERED_LIST:
-            html_blocks.append(process_ordered_list(block))
-    return ParentNode("div", html_blocks)
+    blocks = markdown_to_blocks(markdown)
+    children = []
+    for block in blocks:
+        html_node = block_to_html_node(block)
+        children.append(html_node)
+    return ParentNode("div", children, None)
 
-def process_paragraph(block):
-    children = text_to_children(block)
+def block_to_html_node(block):        
+    block_type = block_to_block_type(block)
+    if block_type == BlockType.PARAGRAPH:
+        return paragraph_to_html_node(block)
+    elif block_type == BlockType.HEADING:
+        return heading_to_html_node(block)
+    elif block_type == BlockType.CODE:
+        return code_to_html_node(block)
+    elif block_type == BlockType.QUOTE:
+        return quote_to_html_node(block)
+    elif block_type == BlockType.UNORDERED_LIST:
+        return unordered_list_to_html_node(block)
+    elif block_type == BlockType.ORDERED_LIST:
+        return ordered_list_to_html_node(block)
+    return ParentNode("div", children)
+
+def paragraph_to_html_node(block):
+    lines = block.split("\n")
+    paragraph = " ".join(lines)
+    children = text_to_children(paragraph)
     return ParentNode("p", children)
 
-def process_heading(block):
+def heading_to_html_node(block):
     level = 0
     for char in block:
         if char == "#":
             level += 1
         else:
             break
-    text = block[level+1:]
+    if level + 1 >= len(block):
+        raise ValueError(f"invalid heading level: {level}")
+    text = block[level + 1 :]
     children = text_to_children(text)
     return ParentNode(f"h{level}", children)
 
-def process_code(block):
-    code_content = block[3:-3].strip()
-    code_node = text_node_to_html_node(TextNode(code_content, TextType.CODE))
-    return ParentNode("pre", [code_node])
+def code_to_html_node(block):
+    if not block.startswith("```") or not block.endswith("```"):
+        raise ValueError("invalid code block")
+    text = block[4:-3]
+    raw_text_node = TextNode(text, TextType.TEXT)
+    child = text_node_to_html_node(raw_text_node)
+    code = ParentNode("code", [child])
+    return ParentNode("pre", [code])
 
-def process_quote(block):
+def quote_to_html_node(block):
     lines = block.split("\n")
-    quote_content = ""
+    new_lines = []
     for line in lines:
-        if line.startswith("> "):
-            quote_content += line[2:] + "\n"
-        elif line.strip() == "":
-            quote_content += "\n"
-        else:
-            quote_content += line + "\n"
-    quote_content = quote_content.rstrip()
-    return ParentNode("blockquote", text_to_children(quote_content))
+        if not line.startswith(">"):
+            raise ValueError("invalid quote block")
+        new_lines.append(line.lstrip(">").strip())
+    content = " ".join(new_lines)
+    children = text_to_children(content)
+    return ParentNode("blockquote", children)
 
-def process_unordered_list(block):
-    lines = block.split("\n")
-    list_items = []
-    for line in lines:
-        if line.startswith("- "):
-            item_content = line[2:].strip()
-            list_items.append(ParentNode("li", text_to_children(item_content)))
-    return ParentNode("ul", list_items)
+def unordered_list_to_html_node(block):
+    items = block.split("\n")
+    html_items = []
+    for item in items:
+        text = item[2:]
+        children = text_to_children(text)
+        html_items.append(ParentNode("li", children))
+    return ParentNode("ul", html_items)
 
-def process_ordered_list(block):
-    lines = block.split("\n")
-    list_items = []
-    for line in lines:
-        if line and line[0].isdigit() and ". " in line:
-            period_pos = line.find(". ")
-            if period_pos != -1:
-                item_content = line[period_pos + 2:].strip()
-                list_items.append(ParentNode("li", text_to_children(item_content)))
-    return ParentNode("ol", list_items)
+def ordered_list_to_html_node(block):
+    items = block.split("\n")
+    html_items = []
+    for item in items:
+        text = item[3:]
+        children = text_to_children(text)
+        html_items.append(ParentNode("li", children))
+    return ParentNode("ol", html_items)
+
+def text_to_children(text):
+    if not text.strip():
+        return []
+    text_nodes = text_to_textnodes(text)
+    html_nodes = []
+    for text_node in text_nodes:
+        html_node = text_node_to_html_node(text_node)
+        html_nodes.append(html_node)
+    return html_nodes
