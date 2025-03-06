@@ -5,12 +5,6 @@ from markdown_blocks import (
     markdown_to_blocks,
     block_to_block_type,
     markdown_to_html_node,
-    paragraph_to_html_node,
-    heading_to_html_node,
-    code_to_html_node,
-    quote_to_html_node,
-    unordered_list_to_html_node,
-    ordered_list_to_html_node
 )
 
 
@@ -188,7 +182,7 @@ this is paragraph text
             "<div><blockquote>This is a blockquote block</blockquote><p>this is paragraph text</p></div>",
         )
 
-    def test_code(self):
+    def test_codeblock(self):
         md = """
 ```
 This is text that _should_ remain
