@@ -25,3 +25,7 @@ class TestExtractTitle(unittest.TestCase):
     def test_leading_and_trailing_whitespace(self):
         markdown = "       \n   #    Spaced Out Title   \n   "
         self.assertEqual(extract_title(markdown), "Spaced Out Title")
+
+
+if __name__ == "__main__":
+    unittest.main()
