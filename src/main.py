@@ -5,17 +5,19 @@ import sys
 from copystatic import copy_files_recursive
 from gencontent import generate_pages_recursive
 
-basepath = "/"
-if len(sys.argv) > 1:
-    basepath = sys.argv[1]
 
 dir_path_static = "./static"
 dir_path_docs = "./docs"
 dir_path_content = "./content"
 template_path = "./template.html"
+default_basepath = "/"
 
 
 def main():
+    basepath = default_basepath
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
+        
     print("Deleting docs directory...")
     if os.path.exists(dir_path_docs):
         shutil.rmtree(dir_path_docs)
